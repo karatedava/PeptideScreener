@@ -1,6 +1,6 @@
-# YOLO STAMP
+# Peptide Screener
 
-Peptide Screener
+Web-based multi tool peptide predictor
 
 ## Installation
 
