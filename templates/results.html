@@ -55,7 +55,8 @@
         </div>
         {% endif %}
 
-        <h2>Download Data</h2>
+        <hr class="section-divider">
+
         <div class="downloads">
             {% if results_file %}
             <a href="{{ url_for('download_file', filename=output_dir/results_file) }}"
