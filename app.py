@@ -23,6 +23,11 @@ def main_page():
 
         peptides_csv = request.files['PeptideCSV']
         selected = request.form.getlist('screeners')
+        custom_header_name = request.form.get('customHeader', 'sequence').strip()
+
+        # Optional: treat empty or only-spaces as default
+        if not custom_header_name:
+            custom_header_name = 'sequence'
 
         output_folder = OUTPUT_DIR / 'SCREENING_OUTPUT'
         run_id = get_next_run_id(base_dir=output_folder)
@@ -35,7 +40,7 @@ def main_page():
             for opt in SCREENERS_LIST 
         }
 
-        sm = SM(screeners_dict)
+        sm = SM(screeners_dict, custom_header_name)
 
         peptides_csv_df = pd.read_csv(peptides_csv)
         df_results = sm.run_complete_screening(peptides_csv_df)

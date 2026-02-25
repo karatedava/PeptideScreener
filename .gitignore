@@ -12,3 +12,4 @@ wheels/
 # custom
 static/runs/
 debug
+.DS_Store

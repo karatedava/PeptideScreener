@@ -12,11 +12,12 @@ import joblib
 
 class CytotoxicityFilter(Screener):
 
-    def __init__(self, model_path:Path, device='cpu'):
+    def __init__(self, model_path:Path, device='cpu', seq_header:str='sequence'):
 
         super().__init__()
 
         self.model = joblib.load(model_path)
+        self.header = seq_header
 
         print('initializing the embedding model')
         self.embedder = Embedder(device)
@@ -27,7 +28,7 @@ class CytotoxicityFilter(Screener):
         run cytotoxicity filtering
         RETURN: pandas datafarme with added columns 'toxicity_prob', 'toxicity_cat and embedded sequences'
         """
-        sequences = self.preprocess_sequences(list(df['sequence'].to_numpy()))
+        sequences = self.preprocess_sequences(list(df[self.header].to_numpy()))
         probabilities = np.array(self.model.predict_proba(sequences)[:,1], dtype=np.float32)
 
         df['toxicity_prob'] = probabilities

@@ -9,10 +9,10 @@ import pandas as pd
 
 class ScreenerManager():
 
-    def __init__(self, screeners_dict:dict):
+    def __init__(self, screeners_dict:dict, seq_header:str='sequence'):
 
         scr_keys = [key for key in list(screeners_dict.keys()) if screeners_dict[key] == True]
-        
+        self.header = seq_header
         self.screener_list = [self._get_screener_(scrk) for scrk in scr_keys]
 
     def _get_screener_(self, scr_key:str) -> Screener:
@@ -23,7 +23,7 @@ class ScreenerManager():
 
         if scr_key == 'toxicity':
             device = get_best_device(DEVICE_OPTIONS)
-            screener = CytotoxicityFilter(model_path=toxicity_clf_path, device=device)
+            screener = CytotoxicityFilter(model_path=toxicity_clf_path, device=device, seq_header=self.header)
         
         return screener
 
