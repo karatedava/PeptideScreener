@@ -1,5 +1,5 @@
 """
-FILTER BASED ON CYTOTOXICITY CLASSIFICATION
+SCREENER BASED ON CYTOTOXICITY CLASSIFICATION
 """
 
 from src.screeners.screener import Screener
@@ -10,17 +10,16 @@ import pandas as pd
 from pathlib import Path
 import joblib
 
-class CytotoxicityFilter(Screener):
+class CytotoxicityScreener(Screener):
 
     def __init__(self, model_path:Path, device='cpu', seq_header:str='sequence'):
 
-        super().__init__()
+        super().__init__(device, seq_header)
 
         self.model = joblib.load(model_path)
-        self.header = seq_header
 
         print('initializing the embedding model')
-        self.embedder = Embedder(device)
+        self.embedder = Embedder(self.device)
 
     def run_screening(self, df:pd.DataFrame):
 
