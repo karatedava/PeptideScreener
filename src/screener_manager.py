@@ -1,12 +1,14 @@
 
 from src.screeners.screener import Screener
 from src.screeners.toxicity.cytotoxicity_screener import CytotoxicityScreener
-from src.screeners.solubility.screener_solubility_opt import SolubilityScreener
+from src.screeners.solubility.screener_solubility_will import SolubilityScreenerWill
+from src.screeners.solubility.screener_solubility_jana import SolubilityScreenerJana
 
-from src.config import toxicity_clf_path, solubility_clf_path, DEVICE_OPTIONS
+from src.config import toxicity_clf_path, solubility_will_clf_path, solubility_jana_clf_path, DEVICE_OPTIONS
 from src.utils import get_best_device
 
 import pandas as pd
+import re
 
 class ScreenerManager():
 
@@ -25,39 +27,140 @@ class ScreenerManager():
         if scr_key == 'toxicity':
             device = get_best_device(DEVICE_OPTIONS)
             screener = CytotoxicityScreener(model_path=toxicity_clf_path, device=device, seq_header=self.header)
-        if scr_key == 'solubility':
-            screener = SolubilityScreener(model_path=solubility_clf_path, seq_header=self.header)
+        if scr_key == 'solubility_will':
+            screener = SolubilityScreenerWill(model_path=solubility_will_clf_path, seq_header=self.header)
+        if scr_key == 'solubility_jana':
+            device = get_best_device(DEVICE_OPTIONS)
+            screener = SolubilityScreenerJana(model_path=solubility_jana_clf_path, device=device, seq_header=self.header)
         
         return screener
 
-    def curate_sequences(self, df: pd.DataFrame) -> pd.DataFrame:
+    def curate_sequences(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
-        Curate the DataFrame by keeping only rows where the sequence column
-        (self.header) is not null, not NaN, and not an empty string.
+        Curate the DataFrame and return two DataFrames:
+        
+        1. curated_df: cleaned, uppercase, repeat-expanded sequences using only standard 20 AA
+        2. skipped_df: rows that were removed, with 'skip_reason' column explaining why
+        
+        Cleaning steps:
+        - Remove N-terminal Ac-/acetyl notation
+        - Remove C-terminal -NH2 notation
+        - Remove internal dashes
+        - Expand repeat notation e.g. (A5) → AAAAA
+        - Convert to uppercase
+        - Keep only sequences composed of A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y
         
         Returns:
-            pd.DataFrame: Filtered DataFrame with valid sequences only
+            tuple[pd.DataFrame, pd.DataFrame]: (curated_df, skipped_df)
         """
         if self.header not in df.columns:
             raise ValueError(f"Column '{self.header}' not found in DataFrame")
-        
-        valid_mask = (
-            df[self.header].notna() & 
-            (df[self.header].astype(str).str.strip() != '')
-        )
-        
-        # Return filtered dataframe
-        return df[valid_mask].copy()
 
-    def run_complete_screening(self, input_df:pd.DataFrame) -> pd.DataFrame:
+        # Work on a copy
+        df = df.copy()
+
+        # Add skip_reason column (will be filled only for skipped rows)
+        df['skip_reason'] = pd.NA
+
+        # ── Step 1: Basic validity check ────────────────────────────────────────
+        df[self.header] = df[self.header].astype(str).str.strip()
+
+        initial_invalid_mask = (
+            df[self.header].isna() |
+            (df[self.header] == '')
+        )
+        df.loc[initial_invalid_mask, 'skip_reason'] = 'empty_or_missing'
+
+        # Split early
+        candidates = df[~initial_invalid_mask].copy()
+        skipped = df[initial_invalid_mask].copy()
+
+        # ── Step 2: Cleaning function ───────────────────────────────────────────
+        CLEAN_PATTERNS = {
+            "acetyl": re.compile(r"^\s*Ac[- ]?", flags=re.I),
+            "amid":   re.compile(r"[- ]*NH2\s*$", flags=re.I),
+            "repeat": re.compile(r"\(([ACDEFGHIKLMNPQRSTVWY])\s*(\d+)\)", flags=re.I),
+        }
+
+        def clean_and_expand(seq: str) -> tuple[str, str | None]:
+            """Return (cleaned_sequence, reason_if_failed)"""
+            if not isinstance(seq, str) or not seq:
+                return "", "cleaning_failed_empty"
+
+            orig = seq
+
+            # Remove acetyl
+            seq = CLEAN_PATTERNS["acetyl"].sub("", seq)
+
+            # Remove amid
+            seq = CLEAN_PATTERNS["amid"].sub("", seq)
+
+            # Remove internal dashes
+            seq = seq.replace("-", "")
+
+            # Expand repeats
+            while (match := CLEAN_PATTERNS["repeat"].search(seq)):
+                aa = match.group(1).upper()
+                count = int(match.group(2))
+                if count < 1 or count > 1000:  # safety limit
+                    return orig, "invalid_repeat_count"
+                seq = seq[:match.start()] + (aa * count) + seq[match.end():]
+
+            seq = seq.strip().upper()
+
+            if not seq:
+                return "", "cleaning_resulted_in_empty"
+
+            return seq, None
+
+        # Apply cleaning
+        clean_results = candidates[self.header].apply(clean_and_expand)
+        candidates['cleaned_seq'] = clean_results.str[0]
+        candidates['clean_fail_reason'] = clean_results.str[1]
+
+        # Move failed cleaning to skipped
+        failed_clean_mask = candidates['clean_fail_reason'].notna()
+        failed = candidates[failed_clean_mask].copy()
+        failed['skip_reason'] = failed['clean_fail_reason']
+        failed = failed.drop(columns=['cleaned_seq', 'clean_fail_reason'], errors='ignore')
+
+        candidates = candidates[~failed_clean_mask].copy()
+        candidates[self.header] = candidates['cleaned_seq']
+        candidates = candidates.drop(columns=['cleaned_seq', 'clean_fail_reason'], errors='ignore')
+
+        # ── Step 3: Final validation (only standard 20 AA) ──────────────────────
+        standard_aa_pattern = re.compile(r"^[ACDEFGHIKLMNPQRSTVWY]+$")
+
+        valid_mask = candidates[self.header].apply(
+            lambda x: bool(standard_aa_pattern.fullmatch(x)) if isinstance(x, str) else False
+        )
+
+        curated = candidates[valid_mask].copy()
+        invalid_aa = candidates[~valid_mask].copy()
+        invalid_aa['skip_reason'] = 'non_standard_amino_acids'
+
+        # ── Combine all skipped ─────────────────────────────────────────────────
+        skipped = pd.concat([skipped, failed, invalid_aa], ignore_index=True)
+
+        # Clean up columns in skipped
+        if 'clean_fail_reason' in skipped.columns:
+            skipped = skipped.drop(columns=['clean_fail_reason'], errors='ignore')
+
+        # Final touches
+        curated = curated.drop(columns=['skip_reason'], errors='ignore')
+        skipped = skipped.reset_index(drop=True)
+
+        return curated, skipped
+
+    def run_complete_screening(self, input_df:pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         
         df = input_df.copy()
 
         print('\n CURATING SEQUENCES \n')
-        df = self.curate_sequences(df)
+        df, skipped_df = self.curate_sequences(df)
 
         print('\n STARTING SCREENING \n')
         for screener in self.screener_list:
             df = screener.run_screening(df)
 
-        return df
+        return df, skipped_df

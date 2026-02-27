@@ -25,10 +25,9 @@
 
     <form method="POST" action="{{ url_for('main_page') }}" enctype="multipart/form-data">
         <hr class="section-divider">
-        <div class="card mb-4">
-            <h2>INPUT DATA</h2>
-            
-            <div class="card-body">
+            <div class="card">
+
+                <h2>INPUT DATA</h2>
                 <p class="text-muted mb-3">
                     Upload a CSV file containing protein sequences <strong>STANDARD AMINO ACIDS ONLY | MAX 50 AA LENGTH</strong>
                     <small>(one sequence per row) with 'sequence' header, or set custom header name below</small>
@@ -62,6 +61,7 @@
                     id="PeptideCSV" 
                     name="PeptideCSV"
                     accept=".csv"
+                    required
                     >
                 </div>
 
@@ -69,27 +69,43 @@
 
                 <h2 class="mb-3">SELECT SCREENING OPTIONS</h2>
                 <p class="text-muted mb-3">
-                    Select the screening / filtering options you want to apply:
+                    Select the screening options you want to apply:
                 </p>
 
                 <div class="option-grid">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="screeners" value="toxicity" id="scr_toxicity">
-                        <label class="form-check-label" for="scr_toxicity">
-                            TOXICITY
-                        </label>
+                    <!-- Toxicity Section -->
+                    <div class="col-12 col-md-6">
+                        <strong>Toxicity Screening</strong>
+                        <div class="card-screener-section">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="screeners" value="toxicity" id="scr_toxicity">
+                                <label class="form-check-label" for="scr_toxicity">
+                                    TOXICITY
+                                </label>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="screeners" value="solubility" id="scr_solubility">
-                        <label class="form-check-label" for="scr_solubility">
-                            SOLUBILITY
-                        </label>
-                    </div>
+                    <br>
+                    <!-- Solubility Section -->
+                    <div class="col-12 col-md-6">
+                        <strong>Solubility Screening</strong>
+                        <div class="card-screener-section">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="screeners" value="solubility_will" id="scr_solubility_will">
+                                <label class="form-check-label" for="scr_solubility_will">
+                                    SOLUBILITY WILL
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="screeners" value="solubility_jana" id="scr_solubility_jana">
+                                <label class="form-check-label" for="scr_solubility_jana">
+                                    SOLUBILITY JANA
+                                </label>
+                            </div>
+                        </div>
+                        </div>
                     
                 </div>
-
-            </div>
         </div>
 
         <br>

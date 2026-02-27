@@ -43,16 +43,23 @@ def main_page():
         sm = SM(screeners_dict, custom_header_name)
 
         peptides_csv_df = pd.read_csv(peptides_csv)
-        df_results = sm.run_complete_screening(peptides_csv_df)
+        df_results, df_skipped = sm.run_complete_screening(peptides_csv_df)
         df_results.to_csv(output_folder / 'screening_results.csv', index=False)
 
-        return render_template('results.html',
-            run_name = run_name,
-            output_dir=output_folder,
-            screening_df = df_results,
-            visualizations = None,
-            results_file='screening_results.csv'
-        )
+        context = {
+            'run_name': run_name,
+            'output_dir': output_folder,
+            'screening_df': df_results,
+            'visualizations': None,
+            'results_file': 'screening_results.csv'
+        }
+
+        # Only add skipped_file key when the file exists / was written
+        if not df_skipped.empty:
+            df_skipped.to_csv(output_folder / 'skipped.csv', index=False)
+            context['skipped_file'] = 'skipped.csv'
+
+        return render_template('results.html', **context)
 
     return render_template('main_page.html')
 

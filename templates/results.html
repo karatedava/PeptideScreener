@@ -65,10 +65,21 @@
             </a>
             {% endif %}
 
+
+            {% if skipped_file %}
+            <a href="{{ url_for('download_file', filename=output_dir/skipped_file) }}"
+               class="download-link">
+                <i class="fas fa-download"></i> Download CSV Skipped
+            </a>
+            {% endif %}
+        
+        </div>
+
+        <hr class="section-divider">
+
         <a href="{{ url_for('main_page') }}" class="back-link">
             <i class="fas fa-arrow-left"></i> Run Another Screening
         </a>
-    </div>
 </div>
 
 </body>

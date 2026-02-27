@@ -35,7 +35,7 @@ def fast_expand_repeats(seq: str) -> str:
     return "".join(parts)
 
 
-class SolubilityScreener(Screener):
+class SolubilityScreenerWill(Screener):
     def __init__(self, model_path: Path, seq_header: str = 'sequence'):
         super().__init__(seq_header=seq_header)
         model_dict = joblib.load(model_path)
@@ -99,7 +99,7 @@ class SolubilityScreener(Screener):
         probabilities = self.xgb.predict_proba(X_scaled)[:, 1]
 
         # Write result with minimal overhead
-        df['solubility_prob'] = probabilities.astype(np.float32)
+        df['will_solubility_prob'] = probabilities.astype(np.float32)
 
         return df
 

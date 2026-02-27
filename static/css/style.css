@@ -28,6 +28,14 @@ body {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
+.card-screener-section {
+    background: #e4dfdf;
+    padding: 0.5rem;
+    border-radius: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+
 h1, h2 {
     font-family: 'Space Grotesk', sans-serif;
     color: #09b1d7;
