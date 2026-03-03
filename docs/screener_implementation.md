@@ -54,7 +54,7 @@ Typical flow inside `run_screening()`:
 
 <img src="imgs/example_screener.png" alt="Example implementation of run_screening method" width="620">
 
-## Step 3 – Register in Configuration
+## Step 3 – Edit Configuration
 
 Open `src/config.py`
 
@@ -75,7 +75,7 @@ SCREENER_LIST = [
 toxicity_clf_path = Path('path/to/clf.pkl')
 ```
 
-## Step 4 – Register in Screener Manager
+## Step 4 – Edit Screener Manager
 
 Open `src/screener_manager.py`
 
@@ -121,4 +121,4 @@ Make sure:
 
 ##  OPTIONAL Step 6 – Add documentation to your tool
 
-Open `templates/documentation.html`
+Open `templates/documentation.html` and use the commented `<div>` block to add section for your tool !

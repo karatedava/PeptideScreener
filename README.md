@@ -19,3 +19,7 @@ uv run app.py
 ```
 
 Open the provided link in your browser
+
+## Implementing new screeners
+
+Detailed guide on how to add new tools is described in: `docs/screener_implementation.md`
