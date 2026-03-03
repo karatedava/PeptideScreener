@@ -17,7 +17,6 @@ uv sync
 ```bash
 uv run app.py
 ```
-
 Open the provided link in your browser
 
 ### WEB APP
