@@ -88,21 +88,19 @@ class SolubilityScreenerWill(Screener):
         # Stage 1: clean (parallelize this in production with multiprocessing / joblib.Parallel)
         cleaned_seqs = [self.clean_sequence(seq) for seq in sequences]
 
-        # Stage 2: feature extraction (this is the main CPU bottleneck)
+        # Stage 2: feature extraction
         features_list = [self.calc_sequence_features(seq) for seq in cleaned_seqs]
 
-        # Stage 3: create DataFrame once
+        # Stage 3: create DataFrame
         features_df = pd.DataFrame(features_list, index=df.index)
 
         # Stage 4: model inference
         X_scaled = self.scaler.transform(features_df)
         probabilities = self.xgb.predict_proba(X_scaled)[:, 1]
 
-        # Write result with minimal overhead
+        print('TEST')
         df['will_solubility_prob'] = probabilities.astype(np.float32)
+        # fix formatting issues
+        df['will_solubility_prob'] = df['will_solubility_prob'].round(3).map('{:.3f}'.format)
 
         return df
-
-
-# Optional: even faster cleaning if you expect many repeats
-# (but usually not worth it unless profiled and confirmed bottleneck)
