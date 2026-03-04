@@ -36,7 +36,16 @@
         Details on each tool can be found on the <strong><a href="{{ url_for('documentation') }}">Documentation</a></strong> page.
     </div>
 
-    <form method="POST" action="{{ url_for('main_page') }}" enctype="multipart/form-data">
+    <form id="main_page_form" method="POST" action="{{ url_for('main_page') }}" enctype="multipart/form-data">
+
+        
+        <div id="loading-overlay">
+            <div class="loading-content">
+                <div class="spinner"></div>
+
+                <div class="loading-text"> Screening in progress </div>
+            </div>
+        </div>
 
         <hr class="section-divider">
  
@@ -157,7 +166,7 @@
 
         <!--submit button -->
         <div class="text-center mt-4">
-            <button type="submit" class="btn btn-primary btn-lg px-5">
+            <button type="submit" id="submit-btn" class="btn btn-primary btn-lg px-5">
                 Start Screening
             </button>
         </div>
@@ -165,6 +174,21 @@
     </form>
 
 </div>
+
+<script>
+    document.getElementById('main_page_form').onsubmit = function() {
+      // Show overlay
+    var overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+        overlay.classList.add('show');
+    }
+      
+    // disable button
+    document.getElementById('submit-btn').disabled = true;
+      
+    
+    };
+</script>
 
 </body>
 </html>
